@@ -147,6 +147,10 @@ void configChannelA(chan_mode state){
 			PORTD.OUTSET = SHDN_INS_A;
 			PORTD.OUTCLR = SWMODE_A | EN_OPA_A;
 			break;
+		case CALIBRATE:
+			PORTD.OUTCLR = SHDN_INS_A | EN_OPA_A;
+			PORTD.OUTSET = SWMODE_A;
+			break;
 	}
 }
 
@@ -165,6 +169,10 @@ void configChannelB(chan_mode state){
 			PORTC.OUTCLR = SWMODE_B | EN_OPA_B;
 			PORTD.OUTSET = SHDN_INS_B;
 			break;
+		case CALIBRATE:
+			PORTD.OUTCLR = SHDN_INS_B;
+			PORTC.OUTCLR = EN_OPA_B;
+			PORTC.OUTSET = SWMODE_A;
 		}
 }
 

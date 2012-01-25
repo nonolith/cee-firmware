@@ -16,6 +16,7 @@ typedef enum chan_mode{
 	DISABLED = 0,
 	SVMI = 1,
 	SIMV = 2,
+	CALIBRATE = 3,
 } chan_mode;
 
 #define A 0
