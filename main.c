@@ -9,6 +9,8 @@
 #include "hardware.h"
 #include "dac.c"
 
+#include <avr/eeprom.h>
+
 unsigned char in_seqno = 0;
 
 int main(void){
@@ -231,8 +233,12 @@ void initADC(void){
 const char PROGMEM hwversion[] = xstringify(HW_VERSION);
 const char PROGMEM fwversion[] = xstringify(FW_VERSION);
 
+uint8_t usb_cmd = 0;
+uint8_t cmd_data = 0;
+
 /** Event handler for the library USB Control Request reception event. */
 bool EVENT_USB_Device_ControlRequest(USB_Request_Header_t* req){
+	usb_cmd = 0;
 	if ((req->bmRequestType & CONTROL_REQTYPE_TYPE) == REQTYPE_VENDOR){
 		switch(req->bRequest){
 			case 0x00: // Info
@@ -241,19 +247,24 @@ bool EVENT_USB_Device_ControlRequest(USB_Request_Header_t* req){
 				}else if (req->wIndex == 1){
 					USB_ep0_send_progmem((uint8_t*)fwversion, sizeof(fwversion));
 				}
-				break;
+				
+				return true;
+				
 			case 0xA0: // read ADC
 				readADC((IN_sample *) ep0_buf_in);
 				USB_ep0_send(sizeof(IN_sample));
-				break;
+				return true;
+				
 			case 0xAA: // write to channel A
 				writeChannel(0, req->wIndex, req->wValue);
 				USB_ep0_send(0);
-				break;
+				return true;
+				
 			case 0xAB: // write to channel B
 				writeChannel(1, req->wIndex, req->wValue);
 				USB_ep0_send(0);
-				break;
+				return true;
+				
 			case 0x65: // set gains
 				switch (req->wIndex){
 					case 0x00:
@@ -270,7 +281,8 @@ bool EVENT_USB_Device_ControlRequest(USB_Request_Header_t* req){
 						break;
 				}
 				USB_ep0_send(0);
-				break;
+				return true;
+				
 			case 0x15: // ISet
 				switch (req->wIndex){
 					case 0x0A:
@@ -281,13 +293,24 @@ bool EVENT_USB_Device_ControlRequest(USB_Request_Header_t* req){
 						break;
 				}
 				USB_ep0_send(0);
-				break;
+				return true;
 				
 			case 0x80: // Configure sampling	
 				configureSampling(req->wIndex /*mode*/ , req->wValue /*period*/);
 				USB_ep0_send(0);
-				break;
-			
+				return true;
+				
+			case 0xE0: // Read EEPROM
+				eeprom_read_block(ep0_buf_in, (void*)(req->wIndex*64), 64);
+				USB_ep0_send(64);
+				return true;
+				
+			case 0xE1: // Write EEPROM
+				usb_cmd = req->bRequest;
+				cmd_data = req->wIndex;
+				USB_ep0_send(0);
+				return true; // Wait for OUT data (expecting an OUT transfer)
+				
 			case 0xBB: // disconnect from USB, jump to bootloader
 				cli();
 				PMIC.CTRL = 0;
@@ -297,10 +320,17 @@ bool EVENT_USB_Device_ControlRequest(USB_Request_Header_t* req){
 				USB_Detach();
 				void (*enter_bootloader)(void) = (void *) 0x47fc /*0x8ff8/2*/;
 				enter_bootloader();
-				break;
+				return true;
 		}
-		return true;
 	}
 	return false;
+}
+
+void EVENT_USB_Device_ControlOUT(uint8_t* buf, uint8_t count){
+	switch (usb_cmd){
+		case 0xE1: // Write EEPROM
+			eeprom_update_block(buf, (void*)(cmd_data*64), count);
+			break;
+	}
 }
 
