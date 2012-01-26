@@ -284,14 +284,8 @@ bool EVENT_USB_Device_ControlRequest(USB_Request_Header_t* req){
 				return true;
 				
 			case 0x15: // ISet
-				switch (req->wIndex){
-					case 0x0A:
-			    		DACB.CH0DATA = req->wValue;
-						break;
-					case 0x0B:
-						DACB.CH1DATA = req->wValue;
-						break;
-				}
+				DACB.CH0DATA = req->wValue;
+				DACB.CH1DATA = req->wIndex;
 				USB_ep0_send(0);
 				return true;
 				
