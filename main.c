@@ -20,19 +20,19 @@ int main(void){
 	sei();	
 	
 	for (;;){
-		USB_Task(); // Lower-priority USB polling, like control requests
+		USB_Task(); // lower-priority USB polling, like control requests
 		packetbuf_endpoint_poll();
 	}
 }
 
 /* Read the voltage and current from the two channels, pulling the latest samples off "ADCA.CHx.RES" registers. */
 void readADC(IN_sample* const s){
-	uint8_t A_Il = ADCA.CH0.RESL, A_Ih = ADCA.CH0.RESH;
+	uint8_t A_Il = ADCA.CH0.RESL, A_Ih = ADCA.CH0.RESH; // low and high bytes for channel A stream I
 	uint8_t A_Vl = ADCA.CH1.RESL, A_Vh = ADCA.CH1.RESH;
 
 	s->avl = A_Vl;
 	s->ail = A_Il;
-	s->aih_avh = (A_Ih << 4) | (A_Vh&0x0f);
+	s->aih_avh = (A_Ih << 4) | (A_Vh&0x0f); // magic packing 
 
 	uint8_t B_Vl = ADCA.CH2.RESL, B_Vh = ADCA.CH2.RESH;
 	uint8_t B_Il = ADCA.CH3.RESL, B_Ih = ADCA.CH3.RESH;
@@ -43,7 +43,7 @@ void readADC(IN_sample* const s){
 }
 
 
-uint8_t sampleIndex = 0; // Sample index within packet to be written next
+uint8_t sampleIndex = 0; // sample index within packet to be written next
 bool havePacket = 0;
 uint8_t sampleFlags = 0;
 IN_packet *inPacket;
@@ -59,27 +59,27 @@ void configureSampling(uint16_t mode, uint16_t period){
 	if (mode == 1 && period > 80){
 		packetbuf_endpoint_init(); // clear buffers
 		TCC0.CTRLA = TC_CLKSEL_DIV8_gc; // 4Mhz
-		TCC0.INTCTRLA = TC_OVFINTLVL_LO_gc;
+		TCC0.INTCTRLA = TC_OVFINTLVL_LO_gc; // interrupt on timer overflow
 		TCC0.PER = period;
 		TCC0.CNT = 0;
 	}else{
 		configChannelA(DISABLED);
 		configChannelB(DISABLED);
-		PORTR.OUTCLR = 1 << 1;
+		PORTR.OUTCLR = 1 << 1; // LED off
 	}
 }
 
 ISR(TCC0_OVF_vect){
 	if (!havePacket){
 		if (packetbuf_in_can_write() && packetbuf_out_can_read()){
-			PORTR.OUTSET = 1 << 1;
+			PORTR.OUTSET = 1 << 1; // LED on
 			havePacket = 1;
 			inPacket = (IN_packet *) packetbuf_in_write_position();
 			outPacket = (OUT_packet *) packetbuf_out_read_position();
-			DAC_config(outPacket->mode_a, outPacket->mode_b);
+			DAC_config(outPacket->mode_a, outPacket->mode_b); // configure the MCP4922 according to state provided in RXed packet
 			sampleIndex = 0;
 		}else{
-			PORTR.OUTCLR = 1 << 1;
+			PORTR.OUTCLR = 1 << 1; // LED off
 			sampleFlags |= FLAG_PACKET_DROPPED;
 			return;
 		}
@@ -94,8 +94,8 @@ ISR(TCC0_OVF_vect){
 	uint8_t i = sampleIndex++;
 	
 	if (i == 1){
-		// Just latched the 0th sample from this packet to the DAC
-		// Apply the mode for this packet
+		// just latched the 0th sample from this packet to the DAC
+		// apply the mode for this packet
 		configChannelA(outPacket->mode_a);
 		configChannelB(outPacket->mode_b);
 	} else if (i == 5){
@@ -113,12 +113,12 @@ ISR(TCC0_OVF_vect){
 
 }
 
-
+/* Use the XMEGA's internal DAC to configure the hard current limit. */
 void configISET(void){
 	DACB.CTRLA |= DAC_CH0EN_bm | DAC_CH1EN_bm | DAC_ENABLE_bm;
 	DACB.CTRLB |= DAC_CHSEL_DUAL_gc; 
-	DACB.CTRLC |= DAC_REFSEL_AREFA_gc; //2.5VREF
-	DACB.CH1DATA = 0x6B7; // 0x6B7/0xFFF*2.5V = 1.05V, 9800*(1.18V-1.05)/560O = 0.227
+	DACB.CTRLC |= DAC_REFSEL_AREFA_gc; // 2.5VREF
+	DACB.CH1DATA = 0x6B7; // sane default for OPA567-level current limiting 
 	DACB.CH0DATA = 0x6B7; // 0x6B7/0xFFF*2.5V = 1.05V, 9800*(1.18V-1.05)/560O = 0.227
 }
 
@@ -137,19 +137,19 @@ void initChannels(void){
 /* Configure the shutdown/enable pin states and set the SPDT switch states. */
 void configChannelA(chan_mode state){
 	switch (state) {
-		case SVMI:
+		case SVMI: // source voltage, measure current
 			PORTD.OUTSET = SWMODE_A | EN_OPA_A;
 			PORTD.OUTCLR = SHDN_INS_A;
 			break;
-		case SIMV:
+		case SIMV: // source current, measure voltage
 			PORTD.OUTSET = EN_OPA_A;
 			PORTD.OUTCLR = SWMODE_A | SHDN_INS_A;
 			break;
-		case DISABLED:
+		case DISABLED: // high impedance 
 			PORTD.OUTSET = SHDN_INS_A;
 			PORTD.OUTCLR = SWMODE_A | EN_OPA_A;
 			break;
-		case CALIBRATE:
+		case CALIBRATE: // MAX9919F on, OPA567 off - used to characterize the '9919
 			PORTD.OUTCLR = SHDN_INS_A | EN_OPA_A;
 			PORTD.OUTSET = SWMODE_A;
 			break;
@@ -212,15 +212,15 @@ void initADC(void){
 	ADCA.REFCTRL = ADC_REFSEL_AREFA_gc; // use 2.5VREF at AREFA
 	ADCA.PRESCALER = ADC_PRESCALER_DIV32_gc; // ADC CLK = 1MHz
 	ADCA.EVCTRL = ADC_SWEEP_0123_gc ; 
-	ADCA.CH0.CTRL = ADC_CH_INPUTMODE_DIFFWGAIN_gc | ADC_CH_GAIN_2X_gc;
-	ADCA.CH1.CTRL = ADC_CH_INPUTMODE_DIFFWGAIN_gc | ADC_CH_GAIN_1X_gc;
-	ADCA.CH2.CTRL = ADC_CH_INPUTMODE_DIFFWGAIN_gc | ADC_CH_GAIN_1X_gc;
-	ADCA.CH3.CTRL = ADC_CH_INPUTMODE_DIFFWGAIN_gc | ADC_CH_GAIN_2X_gc;
+	ADCA.CH0.CTRL = ADC_CH_INPUTMODE_DIFFWGAIN_gc | ADC_CH_GAIN_2X_gc; // channel A stream I
+	ADCA.CH1.CTRL = ADC_CH_INPUTMODE_DIFFWGAIN_gc | ADC_CH_GAIN_1X_gc; // channel A stream V
+	ADCA.CH2.CTRL = ADC_CH_INPUTMODE_DIFFWGAIN_gc | ADC_CH_GAIN_1X_gc; // channel B stream V
+	ADCA.CH3.CTRL = ADC_CH_INPUTMODE_DIFFWGAIN_gc | ADC_CH_GAIN_2X_gc; // channel B stream I
 	ADCA.CH0.MUXCTRL = ADC_CH_MUXNEG_PIN5_gc | ADC_CH_MUXPOS_PIN1_gc; // 1.25VREF vs VS-A
 	ADCA.CH1.MUXCTRL = ADC_CH_MUXNEG_PIN4_gc |  ADC_CH_MUXPOS_PIN2_gc; // INTGND vs ADC-A
 	ADCA.CH2.MUXCTRL = ADC_CH_MUXNEG_PIN4_gc | ADC_CH_MUXPOS_PIN6_gc; // INTGND vs ADC-B
 	ADCA.CH3.MUXCTRL = ADC_CH_MUXNEG_PIN5_gc | ADC_CH_MUXPOS_PIN7_gc; // 1.25VREF vs VS-B
-	NVM.CMD  = NVM_CMD_READ_CALIB_ROW_gc;
+	NVM.CMD  = NVM_CMD_READ_CALIB_ROW_gc; // apply the factory-programmed calibration values
 	ADCA.CALL = pgm_read_byte(offsetof(NVM_PROD_SIGNATURES_t, ADCACAL0));
 	NVM.CMD  = NVM_CMD_READ_CALIB_ROW_gc;
 	ADCA.CALH = pgm_read_byte(offsetof(NVM_PROD_SIGNATURES_t, ADCACAL1));
@@ -327,4 +327,3 @@ void EVENT_USB_Device_ControlOUT(uint8_t* buf, uint8_t count){
 			break;
 	}
 }
-
