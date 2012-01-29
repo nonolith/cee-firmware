@@ -714,7 +714,7 @@ bootload_only:
 bootload: bootload_only update
 
 cee.json: cee.hex
-	python make_fwupdate.py cee.hex
+	python make_fwupdate.py cee.hex "$(FW_VERSION)"
 
 # Listing of phony targets.
 .PHONY : all begin finish end sizebefore sizeafter gccversion \

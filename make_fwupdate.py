@@ -11,7 +11,7 @@ HWVERSION="1.0"
 MEMSIZE=32767
 PAGESIZE=256
 
-def hex_to_dict(fname):
+def hex_to_dict(fname, version):
 	ih = IntelHex(fname)
 	
 	maxaddr = ih.maxaddr()
@@ -27,11 +27,12 @@ def hex_to_dict(fname):
 		'data': base64.b64encode(data),
 		'device_match': DEVICE_MATCH,
 		'device': DEVICE,
-		'hwversion': HWVERSION,
+		'hwVersion': HWVERSION,
+		'fwVersion': version,
 	}
 	
 if __name__=="__main__":
-	d = hex_to_dict(sys.argv[1])
+	d = hex_to_dict(sys.argv[1], sys.argv[2])
 	out = sys.argv[1].replace('.hex', '.json')
 	f=open(sys.argv[1].replace('.hex', '.json'), 'w')
 	json.dump(d, f)
