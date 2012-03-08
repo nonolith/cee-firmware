@@ -18,11 +18,19 @@ uint8_t out_end_index=0;
 uint8_t out_count=0;
 
 void packetbuf_endpoint_init(void){
-	in_start_index = in_end_index = in_count = 0;
 	USB_ep_in_init(1, USB_EP_TYPE_BULK_gc, IN_PACKET_SIZE);
-
-	out_start_index = out_end_index = out_count = 0;
 	USB_ep_out_init(2, USB_EP_TYPE_BULK_gc, OUT_PACKET_SIZE);
+	packetbuf_reset();
+	
+}
+
+void packetbuf_reset(void){
+	in_start_index = in_end_index = in_count = 0;
+	out_start_index = out_end_index = out_count = 0;
+	
+	USB_ep_in_reset(1);
+	USB_ep_out_reset(2);
+	
 	USB_ep_out_start(2, out_buf[0]);
 }
 

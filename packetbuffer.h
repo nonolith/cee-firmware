@@ -26,19 +26,20 @@ extern unsigned char out_end_index;
 extern unsigned char out_count;
 
 void packetbuf_endpoint_init(void);
+void packetbuf_reset(void);
 void packetbuf_endpoint_poll(void);
 
 //determine if here are packets to be sent to the host
 inline static bool packetbuf_in_can_read(void){return in_count>0;}
 
 //determine if there is space in the slave-to-host ring buffer for another packet
-inline static bool packetbuf_in_can_write(void){return in_count<PACKETS_BUFFER;}
+inline static bool packetbuf_in_can_write(void){return in_count<PACKETS_BUFFER-1;}
 
 //determine if there are packets received from the host
 inline static bool packetbuf_out_can_read(void){return out_count>0;}
 
 //determine if there is space in the buffer for another packet from the host
-inline static bool packetbuf_out_can_write(void){return out_count<PACKETS_BUFFER;}
+inline static bool packetbuf_out_can_write(void){return out_count<PACKETS_BUFFER-1;}
 
 //queue packet from host for processing
 inline void packetbuf_out_done_read(void){
