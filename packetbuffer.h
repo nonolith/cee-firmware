@@ -5,7 +5,7 @@
 //
 // Licensed under the terms of the GNU GPLv3+
 
-#include <usb.h>
+#include "usb/usb.h"
 
 #define IN_PACKET_SIZE 64
 #define OUT_PACKET_SIZE 32

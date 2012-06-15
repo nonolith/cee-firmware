@@ -39,7 +39,7 @@
 
 	/* Includes: */
 		#include <avr/pgmspace.h>
-		#include <usb.h>
+		#include "usb/usb.h"
 
 	/* Type Defines: */
 		/** Type define for the device configuration descriptor structure. This must be defined in the
