@@ -17,6 +17,7 @@ int main(void){
 	configHardware();
 	packetbuf_endpoint_init();
 	
+	PORTE.DIRSET = (1<<0) | (1<<1);
 	PMIC.CTRL = PMIC_LOLVLEN_bm | PMIC_MEDLVLEN_bm | PMIC_HILVLEN_bm;
 	sei();	
 	
@@ -71,6 +72,7 @@ void configureSampling(uint16_t mode, uint16_t period){
 }
 
 ISR(TCC0_OVF_vect){
+	PORTE.OUTSET = 1;
 	if (!havePacket){
 		if (packetbuf_in_can_write() && packetbuf_out_can_read()){
 			PORTR.OUTSET = 1 << 1; // LED on
@@ -111,7 +113,7 @@ ISR(TCC0_OVF_vect){
 		packetbuf_in_done_write();
 		packetbuf_out_done_read();
 	}
-
+	PORTE.OUTCLR = 1;
 }
 
 /* Use the XMEGA's internal DAC to configure the hard current limit. */
