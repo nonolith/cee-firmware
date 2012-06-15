@@ -7,7 +7,7 @@ OBJECTS = Descriptors.o  main.o  packetbuffer.o usb/usb_requests.o  usb/usb_xmeg
 
 USB_FLAGS =  -DF_USB=$(F_USB) -D USB_MAXEP=2 -D USB_EP0SIZE=64
 
-COMPILE = avr-gcc -Wall -O3 -DF_CPU=$(F_CPU) $(CFLAGS) -mmcu=$(DEVICE) $(USB_FLAGS)
+COMPILE = avr-gcc -Wall -O3 -g -DF_CPU=$(F_CPU) $(CFLAGS) -mmcu=$(DEVICE) $(USB_FLAGS)
 
 hex: main.hex
 
