@@ -28,16 +28,18 @@ int main(void){
 }
 
 /* Read the voltage and current from the two channels, pulling the latest samples off "ADCA.CHx.RES" registers. */
-void readADC(IN_sample* const s){
-	uint8_t A_Il = ADCA.CH0.RESL, A_Ih = ADCA.CH0.RESH; // low and high bytes for channel A stream I
-	uint8_t A_Vl = ADCA.CH1.RESL, A_Vh = ADCA.CH1.RESH;
+inline void readADC(IN_sample* s){
+	uint8_t A_Il = ADCA.CH0RESL, A_Ih = ADCA.CH0RESH; // low and high bytes for channel A stream I
+	uint8_t A_Vl = ADCA.CH1RESL, A_Vh = ADCA.CH1RESH;
 
+	uint8_t B_Vl = ADCA.CH2RESL, B_Vh = ADCA.CH2RESH;
+	uint8_t B_Il = ADCA.CH3RESL, B_Ih = ADCA.CH3RESH;
+	
+	GCC_FORCE_POINTER_ACCESS(s);
+	
 	s->avl = A_Vl;
 	s->ail = A_Il;
-	s->aih_avh = (A_Ih << 4) | (A_Vh&0x0f); // magic packing 
-
-	uint8_t B_Vl = ADCA.CH2.RESL, B_Vh = ADCA.CH2.RESH;
-	uint8_t B_Il = ADCA.CH3.RESL, B_Ih = ADCA.CH3.RESH;
+	s->aih_avh = (A_Ih << 4) | (A_Vh&0x0f);
 
 	s->bvl = B_Vl;
 	s->bil = B_Il;
