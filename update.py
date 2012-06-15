@@ -13,7 +13,7 @@ try:
 	exit(0)
 except IOError:
 	usb.core.find(idVendor=0x59e3, idProduct=0xCEE1).ctrl_transfer(0x40|0x80, 0xBB, 0, 0, 1)
-	time.sleep(1)
+	time.sleep(2)
 	b = Bootloader()
 	b.handle_args(sys.argv)
 	exit(0)
