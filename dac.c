@@ -84,25 +84,20 @@ inline void DAC_startWrite(OUT_sample* s){
 	DAC_data[1] = s->al;
 	DAC_data[2] = (DAC_data[2] & 0xF0) | (s->bh_ah >> 4);
 	DAC_data[3] = s->bl;
-	DAC_index = 0; // reset index
+	DAC_index = 2; // reset index
 	PORTC.OUTCLR = CS; // CS low, start transfer
-	USARTC1.DATA =  DAC_data[DAC_index++]; // write byte 0
-	USARTC1.CTRLA = USART_DREINTLVL_LO_gc; // enable DRE
-}
-
-ISR(USARTC1_DRE_vect){
-	USARTC1.DATA =  DAC_data[DAC_index++]; // write byte 1 or 3
-	USARTC1.CTRLA = USART_TXCINTLVL_LO_gc | USART_DREINTLVL_OFF_gc; // enable TXC, disable DRE
+	USARTC1.DATA =  DAC_data[0]; // write byte 0
+	USARTC1.DATA =  DAC_data[1]; // write byte 1
 	USARTC1.STATUS = USART_TXCIF_bm; // clear TXC
+	USARTC1.CTRLA = USART_TXCINTLVL_HI_gc; // enable TXC
 }
 
 ISR(USARTC1_TXC_vect){
 	PORTC.OUTSET = CS; // CS high
 	if (DAC_index == 2){
 		PORTC.OUTCLR = CS; // CS low
-		USARTC1.CTRLA = USART_DREINTLVL_LO_gc | USART_TXCINTLVL_OFF_gc; // enable DRE, disable TXC
-		USARTC1.DATA =  DAC_data[DAC_index++]; // write byte 2, increment counter
-	}else{
-		USARTC1.CTRLA = USART_TXCINTLVL_OFF_gc; // disable TXC
+		USARTC1.DATA =  DAC_data[2]; // write byte 2, increment counter
+		USARTC1.DATA =  DAC_data[3]; // write byte 3
+		DAC_index = 4;
 	}
 }

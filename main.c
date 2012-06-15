@@ -17,7 +17,7 @@ int main(void){
 	configHardware();
 	packetbuf_endpoint_init();
 	
-	PMIC.CTRL = PMIC_LOLVLEN_bm;
+	PMIC.CTRL = PMIC_LOLVLEN_bm | PMIC_MEDLVLEN_bm | PMIC_HILVLEN_bm;
 	sei();	
 	
 	for (;;){
@@ -57,7 +57,7 @@ void configureSampling(uint16_t mode, uint16_t period){
 	havePacket = 0;
 	sampleFlags = 0;
 	
-	if (mode == 1 && period > 80){
+	if (mode == 1 /*&& period > 80*/){
 		packetbuf_reset(); // clear buffers
 		TCC0.CTRLA = TC_CLKSEL_DIV8_gc; // 4Mhz
 		TCC0.INTCTRLA = TC_OVFINTLVL_LO_gc; // interrupt on timer overflow
