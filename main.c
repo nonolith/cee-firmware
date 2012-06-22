@@ -4,18 +4,26 @@
 // (C) 2011 Ian Daniher (Nonolith Labs) <ian@nonolithlabs.com>
 // Licensed under the terms of the GNU GPLv3+
 
+#include <Common.h>
+#include <usb.h>
+#include <avr/eeprom.h>
+#include <usb_pipe.h>
+
 #include "cee.h"
 #include "packetbuffer.h"
 #include "hardware.h"
 #include "dac.c"
 
-#include <avr/eeprom.h>
+#define IN_ADDR  (0x81|USB_EP_PP)
+#define OUT_ADDR (0x02|USB_EP_PP)
+
+PIPE(in_pipe, 64, 10);
+PIPE(out_pipe, 64, 10);
 
 unsigned char in_seqno = 0;
 
 int main(void){
 	configHardware();
-	packetbuf_endpoint_init();
 	
 	PORTE.DIRSET = (1<<0) | (1<<1);
 	PMIC.CTRL = PMIC_LOLVLEN_bm | PMIC_MEDLVLEN_bm | PMIC_HILVLEN_bm;
@@ -23,8 +31,16 @@ int main(void){
 	
 	for (;;){
 		USB_Task(); // lower-priority USB polling, like control requests
-		packetbuf_endpoint_poll();
+		if (USB_DeviceState == DEVICE_STATE_Configured){
+			usb_pipe_handle(IN_ADDR, &in_pipe);
+			usb_pipe_handle(OUT_ADDR, &out_pipe);
+		}
 	}
+}
+
+void EVENT_USB_Device_ConfigurationChanged(uint8_t configuration){
+	USB_ep_init(IN_ADDR, USB_EP_TYPE_BULK_gc, 64);
+	USB_ep_init(OUT_ADDR, USB_EP_TYPE_BULK_gc, 64);
 }
 
 /* Read the voltage and current from the two channels, pulling the latest samples off "ADCA.CHx.RES" registers. */
@@ -61,7 +77,8 @@ void configureSampling(uint16_t mode, uint16_t period){
 	sampleFlags = 0;
 	
 	if (mode == 1 /*&& period > 80*/){
-		packetbuf_reset(); // clear buffers
+		usb_pipe_reset(IN_ADDR, &in_pipe);
+		usb_pipe_reset(OUT_ADDR, &out_pipe);
 		TCC0.CTRLA = TC_CLKSEL_DIV8_gc; // 4Mhz
 		TCC0.INTCTRLA = TC_OVFINTLVL_LO_gc; // interrupt on timer overflow
 		TCC0.PER = period;
@@ -76,11 +93,11 @@ void configureSampling(uint16_t mode, uint16_t period){
 ISR(TCC0_OVF_vect){
 	PORTE.OUTSET = 1;
 	if (!havePacket){
-		if (packetbuf_in_can_write() && packetbuf_out_can_read()){
+		if (pipe_can_write(&in_pipe)>0 && pipe_can_read(&out_pipe)>0){
 			PORTR.OUTSET = 1 << 1; // LED on
 			havePacket = 1;
-			inPacket = (IN_packet *) packetbuf_in_write_position();
-			outPacket = (OUT_packet *) packetbuf_out_read_position();
+			inPacket = (IN_packet *) pipe_write_ptr(&in_pipe);
+			outPacket = (OUT_packet *) pipe_read_ptr(&out_pipe);
 			DAC_config(outPacket->mode_a, outPacket->mode_b); // configure the MCP4922 according to state provided in RXed packet
 			sampleIndex = 0;
 		}else{
@@ -112,8 +129,8 @@ ISR(TCC0_OVF_vect){
 	} else if (i >= 9){
 		sampleIndex = 0;
 		havePacket = 0;
-		packetbuf_in_done_write();
-		packetbuf_out_done_read();
+		pipe_done_read(&out_pipe);
+		pipe_done_write(&in_pipe);
 	}
 	PORTE.OUTCLR = 1;
 }
@@ -311,14 +328,7 @@ bool EVENT_USB_Device_ControlRequest(USB_Request_Header_t* req){
 				return true; // Wait for OUT data (expecting an OUT transfer)
 				
 			case 0xBB: // disconnect from USB, jump to bootloader
-				cli();
-				PMIC.CTRL = 0;
-				USB_ep0_send(0);
-				USB_ep0_wait_for_complete();
-				_delay_us(10000);
-				USB_Detach();
-				void (*enter_bootloader)(void) = (void *) 0x47fc /*0x8ff8/2*/;
-				enter_bootloader();
+				USB_enter_bootloader();
 				return true;
 		}
 	}

@@ -65,6 +65,7 @@ FW_VERSION=$(shell git describe --always --dirty='*')
 # MCU name
 MCU = atxmega32a4
 ARCH = XMEGA
+DEVICE = AVR_ATxmega32A4U
 
 
 # Processor frequency.
@@ -121,7 +122,6 @@ include $(USB_PATH)/makefile
 SRC += $(SRC_USB)
 SRC += main.c
 SRC += Descriptors.c
-SRC += packetbuffer.c
 
 # List C++ source files here. (C dependencies are automatically generated.)
 CPPSRC =
@@ -140,7 +140,7 @@ ASRC =
 # Optimization level, can be [0, 1, 2, 3, s].
 #     0 = turn off optimization. s = optimize for size.
 #     (Note: 3 is not always the best optimization level. See avr-libc FAQ.)
-OPT = s
+OPT = 3
 
 
 # Debugging format.
@@ -162,12 +162,13 @@ EXTRAINCDIRS = $(USB_PATH)/
 #     gnu89 = c89 plus GCC extensions
 #     c99   = ISO C99 standard (not yet fully implemented)
 #     gnu99 = c99 plus GCC extensions
-CSTANDARD = -std=c99
+CSTANDARD = -std=gnu99
 
 
 # Place -D or -U options here for C sources
 CDEFS  = -DF_CPU=$(F_CPU)UL
 CDEFS += -DF_USB=$(F_USB)UL
+CDEFS += -D __$(DEVICE)__
 CDEFS += -DBOARD=BOARD_$(BOARD) -DARCH=ARCH_$(ARCH)
 CDEFS += $(USB_OPTS)
 CDEFS += -D'HW_VERSION=$(HW_VERSION)'
@@ -586,7 +587,7 @@ extcoff: $(TARGET).elf
 %.hex: %.elf
 	@echo
 	@echo $(MSG_FLASH) $@
-	$(OBJCOPY) -O $(FORMAT) -R .eeprom -R .fuse -R .lock -R .usbendpoints $< $@
+	$(OBJCOPY) -O $(FORMAT) -R .eeprom -R .fuse -R .lock $< $@
 
 %.eep: %.elf
 	@echo
