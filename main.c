@@ -142,9 +142,6 @@ ISR(TCC0_OVF_vect){
 	
 	DAC_startWrite(&(outPacket->data[sampleIndex]));	 // start SPI write
 	readADC(&(inPacket->data[sampleIndex]));
-
-	PORTC.OUTSET = LDAC; // toggle LDAC
-	PORTC.OUTCLR = LDAC;
 	
 	uint8_t i = sampleIndex++;
 	
@@ -254,6 +251,10 @@ void configHardware(void){
 	initADC();
 	initChannels();
 	USB_Init();
+	
+	// Configure the timer to toggle LDAC
+	TCC0.CTRLB = TC0_CCDEN_bm | TC_WGMODE_SINGLESLOPE_gc;
+	TCC0.CCD = 1;
 }
 
 /* Configure the ADC to 12b, differential w/ gain, signed mode with a 2.5VREF. */
