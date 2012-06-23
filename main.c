@@ -31,10 +31,7 @@ int main(void){
 	
 	for (;;){
 		USB_Task(); // lower-priority USB polling, like control requests
-		if (USB_DeviceState == DEVICE_STATE_Configured){
-			usb_pipe_handle(IN_ADDR, &in_pipe);
-			usb_pipe_handle(OUT_ADDR, &out_pipe);
-		}
+		pollSamplingEndpoints();
 	}
 }
 
@@ -62,19 +59,24 @@ inline void readADC(IN_sample* s){
 	s->bih_bvh = (B_Ih << 4) | (B_Vh&0x0f);
 }
 
-
+bool sampling = 0;
 uint8_t sampleIndex = 0; // sample index within packet to be written next
 bool havePacket = 0;
 uint8_t sampleFlags = 0;
+chan_mode modeA = DISABLED;
+chan_mode modeB = DISABLED;
 IN_packet *inPacket;
 OUT_packet *outPacket;
 
 void configureSampling(uint16_t mode, uint16_t period){
 	TCC0.INTCTRLA = TC_OVFINTLVL_OFF_gc;
 	TCC0.CTRLA = 0;
+	sampling = 0;
 	sampleIndex = 0;
 	havePacket = 0;
 	sampleFlags = 0;
+	modeA = DISABLED;
+	modeB = DISABLED;
 	
 	if (mode == 1 /*&& period > 80*/){
 		usb_pipe_reset(IN_ADDR, &in_pipe);
@@ -83,6 +85,7 @@ void configureSampling(uint16_t mode, uint16_t period){
 		TCC0.INTCTRLA = TC_OVFINTLVL_LO_gc; // interrupt on timer overflow
 		TCC0.PER = period;
 		TCC0.CNT = 0;
+		sampling = 1;
 	}else{
 		configChannelA(DISABLED);
 		configChannelB(DISABLED);
@@ -90,17 +93,47 @@ void configureSampling(uint16_t mode, uint16_t period){
 	}
 }
 
+static inline void pollSamplingEndpoints(){
+	if (sampling){
+		usb_pipe_handle(IN_ADDR, &in_pipe);
+		usb_pipe_handle(OUT_ADDR, &out_pipe);
+	}
+}
+
+void switchMode(void){
+	TCC0.CTRLA = 0; // Stop the timer
+		
+	// TODO: de-glitch by disabling OPA567 when switching mode
+
+	modeA = outPacket->mode_a;
+	modeB = outPacket->mode_b;
+
+	DAC_config(modeA, modeB);
+	
+	// TODO: write first sample before enabling outputs
+
+	configChannelA(modeA);
+	configChannelB(modeB);
+	
+	TCC0.CTRLA = TC_CLKSEL_DIV8_gc;
+	TCC0.CNT=1;
+}
+
 ISR(TCC0_OVF_vect){
 	PORTE.OUTSET = 1;
+	
 	if (!havePacket){
 		if (pipe_can_write(&in_pipe)>0 && pipe_can_read(&out_pipe)>0){
 			PORTR.OUTSET = 1 << 1; // LED on
 			havePacket = 1;
 			inPacket = (IN_packet *) pipe_write_ptr(&in_pipe);
 			outPacket = (OUT_packet *) pipe_read_ptr(&out_pipe);
-			DAC_config(outPacket->mode_a, outPacket->mode_b); // configure the MCP4922 according to state provided in RXed packet
 			sampleIndex = 0;
+
+			if (outPacket->mode_a != modeA || outPacket->mode_b != modeB)
+				return switchMode();
 		}else{
+			// TODO: stop timer
 			PORTR.OUTCLR = 1 << 1; // LED off
 			sampleFlags |= FLAG_PACKET_DROPPED;
 			return;
@@ -115,12 +148,7 @@ ISR(TCC0_OVF_vect){
 	
 	uint8_t i = sampleIndex++;
 	
-	if (i == 1){
-		// just latched the 0th sample from this packet to the DAC
-		// apply the mode for this packet
-		configChannelA(outPacket->mode_a);
-		configChannelB(outPacket->mode_b);
-	} else if (i == 5){
+	if (i == 5){
 		// fill header when there's nothing else going on
 		inPacket->mode_a = outPacket->mode_a;
 		inPacket->mode_b = outPacket->mode_b;
