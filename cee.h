@@ -33,6 +33,8 @@ typedef struct
 
 #define GPIOR_VAR(GPIOR, BIT)  ((volatile io_reg*)_SFR_MEM_ADDR(GPIOR))->bit##BIT
 
+#define sampling GPIOR_VAR(GPIOR0, 0)
+#define havePacket GPIOR_VAR(GPIOR0, 1)
 #define dac_write_state GPIOR_VAR(GPIOR0, 2)
 
 // generic defines

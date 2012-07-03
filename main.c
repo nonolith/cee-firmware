@@ -38,6 +38,9 @@ int main(void){
 	PMIC.CTRL = PMIC_LOLVLEN_bm | PMIC_MEDLVLEN_bm | PMIC_HILVLEN_bm;
 	sei();	
 	
+	sampling = 0;
+	havePacket = 0;
+	
 	for (;;){
 		USB_Task(); // lower-priority USB polling, like control requests
 		pollSamplingEndpoints();
@@ -68,9 +71,7 @@ inline void readADC(IN_sample* s){
 	s->bih_bvh = (B_Ih << 4) | (B_Vh&0x0f);
 }
 
-bool sampling = 0;
 uint8_t sampleIndex = 0; // sample index within packet to be written next
-bool havePacket = 0;
 uint8_t sampleFlags = 0;
 chan_mode modeA = DISABLED;
 chan_mode modeB = DISABLED;
