@@ -78,6 +78,9 @@ chan_mode modeB = DISABLED;
 IN_packet *inPacket;
 OUT_packet *outPacket;
 
+IN_sample* inSample;
+OUT_sample* outSample;
+
 void configureSampling(uint16_t mode, uint16_t period){
 	TCC0.INTCTRLA = TC_OVFINTLVL_OFF_gc;
 	TCC0.CTRLA = 0;
@@ -137,7 +140,9 @@ ISR(TCC0_OVF_vect){
 			PORTR.OUTSET = 1 << 1; // LED on
 			havePacket = 1;
 			inPacket = (IN_packet *) pipe_write_ptr(&in_pipe);
+			inSample = inPacket->data;
 			outPacket = (OUT_packet *) pipe_read_ptr(&out_pipe);
+			outSample = outPacket->data;
 			sampleIndex = 0;
 
 			if (outPacket->mode_a != modeA || outPacket->mode_b != modeB)
@@ -150,18 +155,24 @@ ISR(TCC0_OVF_vect){
 		}
 	}
 	
-	DAC_startWrite(&(outPacket->data[sampleIndex]));	 // start SPI write
-	readADC(&(inPacket->data[sampleIndex]));
+	DAC_startWrite(outSample);	 // start SPI write
+	readADC(inSample);
 	
-	uint8_t i = sampleIndex++;
-	
-	if (i == 5){
-		// fill header when there's nothing else going on
-		inPacket->mode_a = outPacket->mode_a;
-		inPacket->mode_b = outPacket->mode_b;
-		inPacket->flags = sampleFlags;
-		sampleFlags = 0;
-	} else if (i >= 9){
+	if (sampleIndex < 9){
+		sampleIndex++;
+		outSample++;
+		inSample++;
+		
+			
+		if (sampleIndex == 5){
+			// fill header when there's nothing else going on
+			inPacket->mode_a = outPacket->mode_a;
+			inPacket->mode_b = outPacket->mode_b;
+			inPacket->flags = sampleFlags;
+			sampleFlags = 0;
+		}
+		
+	} else{
 		sampleIndex = 0;
 		havePacket = 0;
 		pipe_done_read(&out_pipe);
