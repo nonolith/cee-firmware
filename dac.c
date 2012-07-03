@@ -35,10 +35,7 @@ void DAC_write(uint8_t flags, uint16_t value){
 uint8_t DAC_data_config[2];
 
 /// Buffer for the pending data to be written to the DAC
-uint8_t DAC_data[4];
-
-/// Index indo DAC_data
-volatile uint8_t DAC_index = 0;
+uint8_t DAC_data[2];
 
 /// Generate the DAC flags nibble based on the mode
 #define MODE_TO_DACFLAGS(m)  ((((m)!=DISABLED)?DACFLAG_ENABLE:0) \
@@ -52,25 +49,26 @@ inline void DAC_config(uint8_t mode_a, uint8_t mode_b){
 
 /// Begin a non-blocking DAC write of the data from an OUT_Sample
 inline void DAC_startWrite(OUT_sample* s){
-	// Put out_sample into DAC_data, preserving the flags stored by DAC_config
-	DAC_data[0] = DAC_data_config[0] | (s->bh_ah & 0x0F);
-	DAC_data[1] = s->al;
-	DAC_data[2] = DAC_data_config[1] | (s->bh_ah >> 4);
-	DAC_data[3] = s->bl;
-	DAC_index = 2; // reset index
+	// Put out_sample into DAC_data
+	uint8_t data0 = DAC_data_config[0] | (s->bh_ah & 0x0F);
+	uint8_t data1 = s->al;
+	DAC_data[0] = DAC_data_config[1] | (s->bh_ah >> 4);
+	DAC_data[1] = s->bl;
+	
+	dac_write_state = 0;
 	PORTC.OUTCLR = CS; // CS low, start transfer
-	USARTC1.DATA =  DAC_data[0]; // write byte 0
-	USARTC1.DATA =  DAC_data[1]; // write byte 1
+	USARTC1.DATA =  data0;
+	USARTC1.DATA =  data1;
 	USARTC1.STATUS = USART_TXCIF_bm; // clear TXC
 	USARTC1.CTRLA = USART_TXCINTLVL_HI_gc; // enable TXC
 }
 
 ISR(USARTC1_TXC_vect){
 	PORTC.OUTSET = CS; // CS high
-	if (DAC_index == 2){
+	if (!dac_write_state){
 		PORTC.OUTCLR = CS; // CS low
-		USARTC1.DATA =  DAC_data[2]; // write byte 2, increment counter
-		USARTC1.DATA =  DAC_data[3]; // write byte 3
-		DAC_index = 4;
+		USARTC1.DATA =  DAC_data[0]; // write byte 2
+		USARTC1.DATA =  DAC_data[1]; // write byte 3
+		dac_write_state = 1;
 	}
 }

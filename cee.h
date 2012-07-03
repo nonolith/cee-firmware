@@ -17,6 +17,24 @@
 #include "Descriptors.h"
 #include "usb.h"
 
+// Flags in GPIO register
+
+typedef struct 
+{ 
+  uint8_t bit0:1; 
+  uint8_t bit1:1; 
+  uint8_t bit2:1; 
+  uint8_t bit3:1; 
+  uint8_t bit4:1; 
+  uint8_t bit5:1; 
+  uint8_t bit6:1; 
+  uint8_t bit7:1; 
+}io_reg; 
+
+#define GPIOR_VAR(GPIOR, BIT)  ((volatile io_reg*)_SFR_MEM_ADDR(GPIOR))->bit##BIT
+
+#define dac_write_state GPIOR_VAR(GPIOR0, 2)
+
 // generic defines
 
 typedef enum chan_mode{
