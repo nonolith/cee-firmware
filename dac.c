@@ -30,6 +30,10 @@ void DAC_write(uint8_t flags, uint16_t value){
 	PORTC.OUTSET = CS;
 }
 
+
+// Configuration nibbles for the DAC
+uint8_t DAC_data_config[2];
+
 /// Buffer for the pending data to be written to the DAC
 uint8_t DAC_data[4];
 
@@ -42,16 +46,16 @@ volatile uint8_t DAC_index = 0;
 
 /// Update the config nibbles to DAC_data based on the new flags
 inline void DAC_config(uint8_t mode_a, uint8_t mode_b){
-	DAC_data[0] = MODE_TO_DACFLAGS(mode_a) << 4;
-	DAC_data[2] = (DACFLAG_CHANNEL | MODE_TO_DACFLAGS(mode_b)) << 4;
+	DAC_data_config[0] = MODE_TO_DACFLAGS(mode_a) << 4;
+	DAC_data_config[1] = (DACFLAG_CHANNEL | MODE_TO_DACFLAGS(mode_b)) << 4;
 }
 
 /// Begin a non-blocking DAC write of the data from an OUT_Sample
 inline void DAC_startWrite(OUT_sample* s){
 	// Put out_sample into DAC_data, preserving the flags stored by DAC_config
-	DAC_data[0] = (DAC_data[0] & 0xF0) | (s->bh_ah & 0x0F);
+	DAC_data[0] = DAC_data_config[0] | (s->bh_ah & 0x0F);
 	DAC_data[1] = s->al;
-	DAC_data[2] = (DAC_data[2] & 0xF0) | (s->bh_ah >> 4);
+	DAC_data[2] = DAC_data_config[1] | (s->bh_ah >> 4);
 	DAC_data[3] = s->bl;
 	DAC_index = 2; // reset index
 	PORTC.OUTCLR = CS; // CS low, start transfer
