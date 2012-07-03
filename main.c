@@ -18,8 +18,8 @@
 #define IN_ADDR  (0x81|USB_EP_PP)
 #define OUT_ADDR (0x02|USB_EP_PP)
 
-PIPE(in_pipe, 64, 10);
-PIPE(out_pipe, 64, 10);
+PIPE(in_pipe, 64, 40);
+PIPE(out_pipe, 32, 40);
 
 unsigned char in_seqno = 0;
 
@@ -46,7 +46,7 @@ int main(void){
 
 void EVENT_USB_Device_ConfigurationChanged(uint8_t configuration){
 	USB_ep_init(IN_ADDR, USB_EP_TYPE_BULK_gc, 64);
-	USB_ep_init(OUT_ADDR, USB_EP_TYPE_BULK_gc, 64);
+	USB_ep_init(OUT_ADDR, USB_EP_TYPE_BULK_gc, 32);
 }
 
 /* Read the voltage and current from the two channels, pulling the latest samples off "ADCA.CHx.RES" registers. */
