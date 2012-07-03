@@ -1,7 +1,9 @@
 // Firmware for CEE
 // http://nonolithlabs.com
-// (C) 2011 Kevin Mehall (Nonolith Labs) <km@kevinmehall.net>
-// (C) 2011 Ian Daniher (Nonolith Labs) <ian@nonolithlabs.com>
+// (C) 2012 Nonolith Labs
+// Authors:
+//	Kevin Mehall
+//	Ian Daniher
 // Licensed under the terms of the GNU GPLv3+
 
 #include <Common.h>
@@ -10,7 +12,6 @@
 #include <usb_pipe.h>
 
 #include "cee.h"
-#include "packetbuffer.h"
 #include "hardware.h"
 #include "dac.c"
 

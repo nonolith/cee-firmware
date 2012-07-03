@@ -1,5 +1,5 @@
 // Driver for MCP4922 DAC on USARTC1
-// (C) 2011 Nonolith Labs
+// (C) 2012 Nonolith Labs
 // Authors:
 //   Kevin Mehall
 //   Ian Daniher
@@ -29,37 +29,6 @@ void DAC_write(uint8_t flags, uint16_t value){
 	while(!(USARTC1.STATUS & USART_TXCIF_bm)); // wait for TX complete flag
 	PORTC.OUTSET = CS;
 }
-
-/*
-Interrupt-driven transfer
---------------------------
-
-CS must be pulled high between the two 16-bit writes, one to 
-each channel of the DAC.
-
-Overview of the chain of IRQs:
-
-dac_write
-	- enable DRE, write byte 0
-	- index = 1
-DRE
-	- write byte 1
-	- index = 2
-	- enable TXC, disable DRE, clear TXC
-TXC
-	- toggle CS
-	- enable DRE, disable TXC
-	- write byte 2
-	- index = 3
-DRE
-	- write byte 3
-	- index = 4
-	- enable TXC, disable DRE, clear TXC
-TXC
-    - raise CS
-    - disable TXC
-
-*/
 
 /// Buffer for the pending data to be written to the DAC
 uint8_t DAC_data[4];

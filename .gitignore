@@ -1,0 +1,8 @@
+*~
+*.o
+*.hex
+*.map
+*.lst
+*.elf
+.dep
+cee.json

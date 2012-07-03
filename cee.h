@@ -1,3 +1,10 @@
+// Firmware for CEE
+// http://nonolithlabs.com
+// (C) 2012 Nonolith Labs
+// Authors:
+//	Kevin Mehall
+//	Ian Daniher
+// Licensed under the terms of the GNU GPLv3+
 #pragma once
 #define F_CPU 32000000UL
 
@@ -59,6 +66,5 @@ void configChannels(void);
 void writeChannelA(uint8_t state);
 void writeChannelB(uint8_t state);
 void readADC(IN_sample* s);
-bool EVENT_USB_Device_ControlRequest(USB_Request_Header_t* req);
 void configISET(void);
 inline static void pollSamplingEndpoints(void);
