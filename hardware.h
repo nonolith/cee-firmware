@@ -16,6 +16,12 @@
 #define SCK (1 << 5)
 #define TXD1 (1 << 7)
 
+// PORTC is mapped to VPORT0 for speed
+inline void CS_LO(void) ATTR_ALWAYS_INLINE;
+inline void CS_LO(void){VPORT0.OUT &= ~CS;}
+inline void CS_HI(void) ATTR_ALWAYS_INLINE;
+inline void CS_HI(void){VPORT0.OUT |= CS;}
+
 
 // generic pinmappings
 #define SHDN_INS_A	(1 << 5)

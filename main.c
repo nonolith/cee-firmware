@@ -256,6 +256,10 @@ void configHardware(void){
 	PORTR.OUTSET = 1 << 1;
 	_delay_ms(50);
 	PORTR.OUTCLR = 1 << 1;
+	
+	// Map PORTC to VPORT0 for optimized access to DAC_CS
+	PORTCFG.VPCTRLA = PORTCFG_VP02MAP_PORTC_gc;
+	
 	DAC_init();
 	initADC();
 	initChannels();

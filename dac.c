@@ -56,7 +56,7 @@ inline void DAC_startWrite(OUT_sample* s){
 	DAC_data[1] = s->bl;
 	
 	dac_write_state = 0;
-	PORTC.OUTCLR = CS; // CS low, start transfer
+	CS_LO();
 	USARTC1.DATA =  data0;
 	USARTC1.DATA =  data1;
 	USARTC1.STATUS = USART_TXCIF_bm; // clear TXC
@@ -64,9 +64,9 @@ inline void DAC_startWrite(OUT_sample* s){
 }
 
 ISR(USARTC1_TXC_vect){
-	PORTC.OUTSET = CS; // CS high
+	CS_HI();
 	if (!dac_write_state){
-		PORTC.OUTCLR = CS; // CS low
+		CS_LO();
 		USARTC1.DATA =  DAC_data[0]; // write byte 2
 		USARTC1.DATA =  DAC_data[1]; // write byte 3
 		dac_write_state = 1;
