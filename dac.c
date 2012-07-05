@@ -19,18 +19,6 @@ void DAC_init(void){
 	PORTC.OUTCLR = LDAC | CS; // LDAC, SCK low
 }
 
-/// Blocking write a value to a specified channel of the DAC with specified flags.
-void DAC_write(uint8_t flags, uint16_t value){
-	PORTC.OUTCLR = CS;
-	USARTC1.DATA = ((flags<<4) & 0xF0) | ((value >> 8) & 0x0F); // munge channel, flags, and four MSB of the value into a single byte
-	while(!(USARTC1.STATUS & USART_DREIF_bm)); // wait until we can write another byte
-	USARTC1.STATUS = USART_TXCIF_bm; // clear TX complete flag
-	USARTC1.DATA = value & 0xFF;
-	while(!(USARTC1.STATUS & USART_TXCIF_bm)); // wait for TX complete flag
-	PORTC.OUTSET = CS;
-}
-
-
 // Configuration nibbles for the DAC
 uint8_t DAC_data_config[2];
 

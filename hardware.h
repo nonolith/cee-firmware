@@ -1,5 +1,8 @@
-// hardware-specific definitions
-// (C) 2011 Ian Daniher (Nonolith Labs) <ian@nonolithlabs.com>
+// Hardware-specific definitions
+// (C) 2012 Nonolith Labs
+// Authors:
+//	Kevin Mehall
+//	Ian Daniher
 // Licensed under the terms of the GNU GPLv3+
 
 
@@ -35,3 +38,48 @@ inline void CS_HI(void){VPORT0.OUT |= CS;}
 #define ISET_B	(1 << 3)
 #define ISET_A	(1 << 2)
 
+/* Configure the shutdown/enable pin states and set the SPDT switch states. */
+inline void configChannelA(chan_mode state) ATTR_ALWAYS_INLINE;
+inline void configChannelA(chan_mode state){
+	switch (state) {
+		case SVMI: // source voltage, measure current
+			PORTD.OUTSET = SWMODE_A | EN_OPA_A;
+			PORTD.OUTCLR = SHDN_INS_A;
+			break;
+		case SIMV: // source current, measure voltage
+			PORTD.OUTSET = EN_OPA_A;
+			PORTD.OUTCLR = SWMODE_A | SHDN_INS_A;
+			break;
+		case DISABLED: // high impedance 
+			PORTD.OUTSET = SHDN_INS_A;
+			PORTD.OUTCLR = SWMODE_A | EN_OPA_A;
+			break;
+		case CALIBRATE: // MAX9919F on, OPA567 off - used to characterize the '9919
+			PORTD.OUTCLR = SHDN_INS_A | EN_OPA_A;
+			PORTD.OUTSET = SWMODE_A;
+			break;
+	}
+}
+
+inline void configChannelB(chan_mode state) ATTR_ALWAYS_INLINE;
+inline void configChannelB(chan_mode state){
+	switch (state) {
+		case SVMI:
+			PORTC.OUTSET = SWMODE_B | EN_OPA_B;
+			PORTD.OUTCLR = SHDN_INS_B;
+			break;
+		case SIMV:
+			PORTC.OUTSET = EN_OPA_B;
+			PORTC.OUTCLR = SWMODE_B;
+			PORTD.OUTCLR = SHDN_INS_B;
+			break;
+		case DISABLED:
+			PORTC.OUTCLR = SWMODE_B | EN_OPA_B;
+			PORTD.OUTSET = SHDN_INS_B;
+			break;
+		case CALIBRATE:
+			PORTD.OUTCLR = SHDN_INS_B;
+			PORTC.OUTCLR = EN_OPA_B;
+			PORTC.OUTSET = SWMODE_A;
+		}
+}

@@ -78,13 +78,7 @@ typedef struct OUT_packet{
 } __attribute__((packed)) OUT_packet;
 
 // function prototypes
-void configHardware(void);
+void init_hardware(void);
 void initDAC(void);
-void writeDAC(uint8_t flags, uint16_t value);
-void initADC(void);
-void configChannels(void);
-void writeChannelA(uint8_t state);
-void writeChannelB(uint8_t state);
 void readADC(IN_sample* s);
-void configISET(void);
 inline static void pollSamplingEndpoints(void);

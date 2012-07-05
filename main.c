@@ -24,7 +24,7 @@ PIPE(out_pipe, 32, 40);
 unsigned char in_seqno = 0;
 
 int main(void){
-	configHardware();
+	init_hardware();
 	
 	//DEBUG: event out
 	
@@ -162,7 +162,6 @@ ISR(TCC0_OVF_vect){
 		sampleIndex++;
 		outSample++;
 		inSample++;
-		
 			
 		if (sampleIndex == 5){
 			// fill header when there's nothing else going on
@@ -181,88 +180,8 @@ ISR(TCC0_OVF_vect){
 	PORTE.OUTCLR = 1;
 }
 
-/* Use the XMEGA's internal DAC to configure the hard current limit. */
-void configISET(void){
-	DACB.CTRLA |= DAC_CH0EN_bm | DAC_CH1EN_bm | DAC_ENABLE_bm;
-	DACB.CTRLB |= DAC_CHSEL_DUAL_gc; 
-	DACB.CTRLC |= DAC_REFSEL_AREFA_gc; // 2.5VREF
-	DACB.CH1DATA = 0x6B7; // sane default for OPA567-level current limiting 
-	DACB.CH0DATA = 0x6B7; // 0x6B7/0xFFF*2.5V = 1.05V, 9800*(1.18V-1.05)/560O = 0.227
-}
-
-/* Configure the pin modes for the switches and opamps. */
-void initChannels(void){
-	PORTD.DIRSET = SHDN_INS_A | SWMODE_A | SHDN_INS_B | EN_OPA_A;
-	PORTC.DIRSET = SWMODE_B | EN_OPA_B;
-	PORTD.DIRCLR = TFLAG_A;
-	PORTC.DIRCLR = TFLAG_B;
-	PORTB.DIRSET = ISET_A | ISET_B;
-	PORTD.OUTCLR = EN_OPA_A;
-	PORTC.OUTCLR = EN_OPA_B;
-	configISET();
-}
-
-/* Configure the shutdown/enable pin states and set the SPDT switch states. */
-void configChannelA(chan_mode state){
-	switch (state) {
-		case SVMI: // source voltage, measure current
-			PORTD.OUTSET = SWMODE_A | EN_OPA_A;
-			PORTD.OUTCLR = SHDN_INS_A;
-			break;
-		case SIMV: // source current, measure voltage
-			PORTD.OUTSET = EN_OPA_A;
-			PORTD.OUTCLR = SWMODE_A | SHDN_INS_A;
-			break;
-		case DISABLED: // high impedance 
-			PORTD.OUTSET = SHDN_INS_A;
-			PORTD.OUTCLR = SWMODE_A | EN_OPA_A;
-			break;
-		case CALIBRATE: // MAX9919F on, OPA567 off - used to characterize the '9919
-			PORTD.OUTCLR = SHDN_INS_A | EN_OPA_A;
-			PORTD.OUTSET = SWMODE_A;
-			break;
-	}
-}
-
-void configChannelB(chan_mode state){
-	switch (state) {
-		case SVMI:
-			PORTC.OUTSET = SWMODE_B | EN_OPA_B;
-			PORTD.OUTCLR = SHDN_INS_B;
-			break;
-		case SIMV:
-			PORTC.OUTSET = EN_OPA_B;
-			PORTC.OUTCLR = SWMODE_B;
-			PORTD.OUTCLR = SHDN_INS_B;
-			break;
-		case DISABLED:
-			PORTC.OUTCLR = SWMODE_B | EN_OPA_B;
-			PORTD.OUTSET = SHDN_INS_B;
-			break;
-		case CALIBRATE:
-			PORTD.OUTCLR = SHDN_INS_B;
-			PORTC.OUTCLR = EN_OPA_B;
-			PORTC.OUTSET = SWMODE_A;
-		}
-}
-
-
-
-/* Take a channel, state, and value and configure the switches, shutdowns, and DACs. High level abstraction. */
-void writeChannel(uint8_t channel, uint8_t state, uint16_t value){
-	uint8_t dacflags = 0;
-	if (channel) dacflags |= DACFLAG_CHANNEL;
-	if (state != DISABLED) dacflags |= DACFLAG_ENABLE;
-	if (state == SIMV) dacflags |= DACFLAG_NO_MULT_REF;
-
-	if (channel == 0) configChannelA(state);
-	else              configChannelB(state);
-
-	DAC_write(dacflags, value);
-}
-
-/* Configures the board hardware and chip peripherals for the project's functionality. */
-void configHardware(void){
+// Configures the board hardware and chip peripherals for the project's functionality.
+void init_hardware(void){
 	USB_ConfigureClock();
 	PORTR.DIRSET = 1 << 1;
 	PORTR.OUTSET = 1 << 1;
@@ -273,24 +192,15 @@ void configHardware(void){
 	PORTCFG.VPCTRLA = PORTCFG_VP02MAP_PORTC_gc;
 	
 	DAC_init();
-	initADC();
-	initChannels();
-	USB_Init();
 	
-	// Configure the timer to toggle LDAC
-	TCC0.CTRLB = TC0_CCDEN_bm | TC_WGMODE_SINGLESLOPE_gc;
-	TCC0.CCD = 1;
-}
-
-/* Configure the ADC to 12b, differential w/ gain, signed mode with a 2.5VREF. */
-void initADC(void){
+	// Configure the ADC to 12b, differential w/ gain, signed mode with a 2.5VREF.
 	ADCA.CTRLB = ADC_RESOLUTION_12BIT_gc | 1 << ADC_CONMODE_bp | 0 << ADC_IMPMODE_bp | ADC_CURRLIMIT_NO_gc;
 	ADCA.REFCTRL = ADC_REFSEL_AREFA_gc; // use 2.5VREF at AREFA
 	ADCA.PRESCALER = ADC_PRESCALER_DIV16_gc; // ADC CLK = 2MHz
 	ADCA.EVCTRL = ADC_SWEEP_0123_gc | ADC_EVACT_SYNCHSWEEP_gc | ADC_EVSEL_7_gc;
 	EVSYS.CH7MUX = EVSYS_CHMUX_TCC0_CCB_gc;
 	TCC0.CCB = 20;
-	 
+		 
 	ADCA.CH0.CTRL = ADC_CH_INPUTMODE_DIFFWGAIN_gc | ADC_CH_GAIN_2X_gc; // channel A stream I
 	ADCA.CH1.CTRL = ADC_CH_INPUTMODE_DIFFWGAIN_gc | ADC_CH_GAIN_1X_gc; // channel A stream V
 	ADCA.CH2.CTRL = ADC_CH_INPUTMODE_DIFFWGAIN_gc | ADC_CH_GAIN_1X_gc; // channel B stream V
@@ -304,13 +214,32 @@ void initADC(void){
 	NVM.CMD  = NVM_CMD_READ_CALIB_ROW_gc;
 	ADCA.CALH = pgm_read_byte(offsetof(NVM_PROD_SIGNATURES_t, ADCACAL1));
 	ADCA.CTRLA = ADC_ENABLE_bm;
+
+	// Configure the pin modes for the switches and opamps.
+	PORTD.DIRSET = SHDN_INS_A | SWMODE_A | SHDN_INS_B | EN_OPA_A;
+	PORTC.DIRSET = SWMODE_B | EN_OPA_B;
+	PORTD.DIRCLR = TFLAG_A;
+	PORTC.DIRCLR = TFLAG_B;
+	PORTB.DIRSET = ISET_A | ISET_B;
+	PORTD.OUTCLR = EN_OPA_A;
+	PORTC.OUTCLR = EN_OPA_B;
+
+	// Use the XMEGA's internal DAC to configure the hard current limit.
+	DACB.CTRLA |= DAC_CH0EN_bm | DAC_CH1EN_bm | DAC_ENABLE_bm;
+	DACB.CTRLB |= DAC_CHSEL_DUAL_gc; 
+	DACB.CTRLC |= DAC_REFSEL_AREFA_gc; // 2.5VREF
+	DACB.CH1DATA = 0x6B7; // sane default for OPA567-level current limiting 
+	DACB.CH0DATA = 0x6B7; // 0x6B7/0xFFF*2.5V = 1.05V, 9800*(1.18V-1.05)/560O = 0.227
+
+	USB_Init();
+	
+	// Configure the timer to toggle LDAC
+	TCC0.CTRLB = TC0_CCDEN_bm | TC_WGMODE_SINGLESLOPE_gc;
+	TCC0.CCD = 1;
 }
 
-#define xstringify(s) stringify(s)
-#define stringify(s) #s
-
-const char PROGMEM hwversion[] = xstringify(HW_VERSION);
-const char PROGMEM fwversion[] = xstringify(FW_VERSION);
+const char PROGMEM hwversion[] = STRINGIFY_EXPANDED(HW_VERSION);
+const char PROGMEM fwversion[] = STRINGIFY_EXPANDED(FW_VERSION);
 
 uint8_t usb_cmd = 0;
 uint8_t cmd_data = 0;
@@ -327,21 +256,6 @@ bool EVENT_USB_Device_ControlRequest(USB_Request_Header_t* req){
 					USB_ep0_send_progmem((uint8_t*)fwversion, sizeof(fwversion));
 				}
 				
-				return true;
-				
-			case 0xA0: // read ADC
-				readADC((IN_sample *) ep0_buf_in);
-				USB_ep0_send(sizeof(IN_sample));
-				return true;
-				
-			case 0xAA: // write to channel A
-				writeChannel(0, req->wIndex, req->wValue);
-				USB_ep0_send(0);
-				return true;
-				
-			case 0xAB: // write to channel B
-				writeChannel(1, req->wIndex, req->wValue);
-				USB_ep0_send(0);
 				return true;
 				
 			case 0x65: // set gains
