@@ -136,7 +136,7 @@ ISR(TCC0_OVF_vect){
 	PORTE.OUTSET = 1;
 	
 	if (!havePacket){
-		if (pipe_can_write(&in_pipe)>0 && pipe_can_read(&out_pipe)>0){
+		if (likely(pipe_can_write(&in_pipe)>0 && pipe_can_read(&out_pipe)>0)){
 			PORTR.OUTSET = 1 << 1; // LED on
 			havePacket = 1;
 			inPacket = (IN_packet *) pipe_write_ptr(&in_pipe);
@@ -145,8 +145,9 @@ ISR(TCC0_OVF_vect){
 			outSample = outPacket->data;
 			sampleIndex = 0;
 
-			if (outPacket->mode_a != modeA || outPacket->mode_b != modeB)
+			if (unlikely(outPacket->mode_a != modeA || outPacket->mode_b != modeB)){
 				return switchMode();
+			}
 		}else{
 			// TODO: stop timer
 			PORTR.OUTCLR = 1 << 1; // LED off
