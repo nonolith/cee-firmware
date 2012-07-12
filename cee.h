@@ -82,3 +82,11 @@ void init_hardware(void);
 void initDAC(void);
 void readADC(IN_sample* s);
 inline static void pollSamplingEndpoints(void);
+
+typedef struct CEE_version_descriptor{
+	uint8_t version_major;
+	uint8_t version_minor;
+	uint8_t flags;
+	uint8_t per_ns;
+	uint8_t min_per;
+} __attribute__((packed)) CEE_version_descriptor;

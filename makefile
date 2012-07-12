@@ -2,7 +2,7 @@
 
 HW_PRODUCT=Nonolith CEE
 HW_VERSION=1.0
-FW_VERSION=$(shell git describe --always --dirty='*')
+GIT_VERSION=$(shell git describe --long --abbrev=100 --dirty='*')
 
 # MCU name
 MCU = atxmega32a4
@@ -106,7 +106,7 @@ CDEFS += -D __$(DEVICE)__
 CDEFS += -DBOARD=BOARD_$(BOARD) -DARCH=ARCH_$(ARCH)
 CDEFS += $(USB_OPTS)
 CDEFS += -D'HW_VERSION=$(HW_VERSION)'
-CDEFS += -D'FW_VERSION=$(FW_VERSION)'
+CDEFS += -D'GIT_VERSION=$(GIT_VERSION)'
 
 
 # Place -D or -U options here for ASM sources

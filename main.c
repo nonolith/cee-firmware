@@ -240,7 +240,16 @@ void init_hardware(void){
 }
 
 const char PROGMEM hwversion[] = STRINGIFY_EXPANDED(HW_VERSION);
-const char PROGMEM fwversion[] = STRINGIFY_EXPANDED(FW_VERSION);
+const char PROGMEM fwversion[] = "1.2-x";
+const char PROGMEM gitversion[] = STRINGIFY_EXPANDED(GIT_VERSION);
+
+const CEE_version_descriptor PROGMEM versioninfo = {
+	.version_major = 1,
+	.version_minor = 2,
+	.flags = 0,
+	.per_ns = 250,
+	.min_per = 50,
+};
 
 uint8_t usb_cmd = 0;
 uint8_t cmd_data = 0;
@@ -250,15 +259,36 @@ bool EVENT_USB_Device_ControlRequest(USB_Request_Header_t* req){
 	usb_cmd = 0;
 	if ((req->bmRequestType & CONTROL_REQTYPE_TYPE) == REQTYPE_VENDOR){
 		switch(req->bRequest){
-			case 0x00: // Info
-				if (req->wIndex == 0){
-					USB_ep0_send_progmem((uint8_t*)hwversion, sizeof(hwversion));
-				}else if (req->wIndex == 1){
-					USB_ep0_send_progmem((uint8_t*)fwversion, sizeof(fwversion));
+			case 0x00: { // Info
+				uint8_t* ptr = 0;
+				uint8_t size = 0;
+
+				switch(req->wIndex){
+					case 0:
+						ptr = (uint8_t*)hwversion;
+						size = sizeof(hwversion);
+						break;
+					case 1:
+						ptr = (uint8_t*)fwversion;
+						size = sizeof(fwversion);
+						break;
+					case 2:
+						ptr = (uint8_t*)gitversion;
+						size = sizeof(gitversion);
+						break;
+					case 0xff:
+						ptr = (uint8_t*)&versioninfo;
+						size = sizeof(versioninfo);
+						break;
 				}
-				
-				return true;
-				
+
+				if (size != 0 && (req->bmRequestType & CONTROL_REQTYPE_DIRECTION) == REQDIR_DEVICETOHOST){
+					USB_ep0_send_progmem(ptr, MIN(req->wLength, size));
+					return true;
+				}else{
+					return false;
+				}
+			}
 			case 0x65: // set gains
 				switch (req->wIndex){
 					case 0x00:
