@@ -2,7 +2,10 @@
 
 HW_PRODUCT=Nonolith CEE
 HW_VERSION=1.0
-GIT_VERSION=$(shell git describe --long --abbrev=100 --dirty='*')
+FW_VERSION=1.2_alpha
+GIT_ID =  $(shell git rev-parse --short=16 HEAD 2>/dev/null)
+GIT_DIRTY = $(shell git status --porcelain 2>/dev/null | grep -e '^ [MADRC]' > /dev/null && echo '*')
+GIT_VERSION = $(GIT_ID)$(GIT_DIRTY)
 
 # MCU name
 MCU = atxmega32a4
@@ -438,7 +441,7 @@ bootload_only:
 bootload: bootload_only update
 
 cee.json: cee.hex
-	python make_fwupdate.py cee.hex "$(FW_VERSION)"
+	python make_fwupdate.py cee.hex "$(FW_VERSION)" "$(GIT_VERSION)"
 
 # Listing of phony targets.
 .PHONY : all begin finish end sizebefore sizeafter gccversion \
