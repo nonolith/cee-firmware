@@ -240,7 +240,7 @@ void init_hardware(void){
 }
 
 const char PROGMEM hwversion[] = STRINGIFY_EXPANDED(HW_VERSION);
-const char PROGMEM fwversion[] = "1.2-x";
+const char PROGMEM fwversion[] = STRINGIFY_EXPANDED(FW_VERSION);
 const char PROGMEM gitversion[] = STRINGIFY_EXPANDED(GIT_VERSION);
 
 const CEE_version_descriptor PROGMEM versioninfo = {
