@@ -42,6 +42,7 @@ int main(void){
 	havePacket = 0;
 	
 	for (;;){
+		USB_Evt_Task();
 		USB_Task(); // lower-priority USB polling, like control requests
 		pollSamplingEndpoints();
 	}
