@@ -116,19 +116,35 @@ static inline void pollSamplingEndpoints(){
 
 void switchMode(void){
 	TCC0.CTRLA = 0; // Stop the timer
-		
-	// TODO: de-glitch by disabling OPA567 when switching mode
+	
+	// Prevent glitch by disabling OPA567 when switching mode
+	if (outPacket->mode_a != modeA){
+		enableOutA(DISABLED);
+	}
 
+	if (outPacket->mode_b != modeB){
+		enableOutB(DISABLED);
+	}
+	
 	modeA = outPacket->mode_a;
 	modeB = outPacket->mode_b;
 
 	DAC_config(modeA, modeB);
-	
-	// TODO: write first sample before enabling outputs
+	DAC_startWrite(outSample);
 
 	configChannelA(modeA);
 	configChannelB(modeB);
+
+	DAC_wait();
+
+	// Pulse LDAC to output values
+	PORTC.OUTSET = LDAC;
+	PORTC.OUTCLR = LDAC;
+
+	enableOutA(modeA);
+	enableOutB(modeB);
 	
+	// Restart normal sample timer
 	TCC0.CTRLA = TC_CLKSEL_DIV8_gc;
 	TCC0.CNT=1;
 }

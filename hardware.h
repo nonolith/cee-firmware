@@ -43,19 +43,18 @@ inline void configChannelA(chan_mode state) ATTR_ALWAYS_INLINE;
 inline void configChannelA(chan_mode state){
 	switch (state) {
 		case SVMI: // source voltage, measure current
-			PORTD.OUTSET = SWMODE_A | EN_OPA_A;
+			PORTD.OUTSET = SWMODE_A;
 			PORTD.OUTCLR = SHDN_INS_A;
 			break;
 		case SIMV: // source current, measure voltage
-			PORTD.OUTSET = EN_OPA_A;
 			PORTD.OUTCLR = SWMODE_A | SHDN_INS_A;
 			break;
 		case DISABLED: // high impedance 
 			PORTD.OUTSET = SHDN_INS_A;
-			PORTD.OUTCLR = SWMODE_A | EN_OPA_A;
+			PORTD.OUTCLR = SWMODE_A;
 			break;
 		case CALIBRATE: // MAX9919F on, OPA567 off - used to characterize the '9919
-			PORTD.OUTCLR = SHDN_INS_A | EN_OPA_A;
+			PORTD.OUTCLR = SHDN_INS_A;
 			PORTD.OUTSET = SWMODE_A;
 			break;
 	}
@@ -65,21 +64,45 @@ inline void configChannelB(chan_mode state) ATTR_ALWAYS_INLINE;
 inline void configChannelB(chan_mode state){
 	switch (state) {
 		case SVMI:
-			PORTC.OUTSET = SWMODE_B | EN_OPA_B;
+			PORTC.OUTSET = SWMODE_B;
 			PORTD.OUTCLR = SHDN_INS_B;
 			break;
 		case SIMV:
-			PORTC.OUTSET = EN_OPA_B;
 			PORTC.OUTCLR = SWMODE_B;
 			PORTD.OUTCLR = SHDN_INS_B;
 			break;
 		case DISABLED:
-			PORTC.OUTCLR = SWMODE_B | EN_OPA_B;
+			PORTC.OUTCLR = SWMODE_B;
 			PORTD.OUTSET = SHDN_INS_B;
 			break;
 		case CALIBRATE:
 			PORTD.OUTCLR = SHDN_INS_B;
-			PORTC.OUTCLR = EN_OPA_B;
 			PORTC.OUTSET = SWMODE_A;
 		}
+}
+
+inline void enableOutA(chan_mode state){
+	switch (state) {
+		case SVMI:
+		case SIMV:
+			PORTD.OUTSET = EN_OPA_A;
+			break;
+		case DISABLED:
+		case CALIBRATE:
+			PORTD.OUTCLR = EN_OPA_A;
+			break;
+	}
+}
+
+inline void enableOutB(chan_mode state){
+	switch (state) {
+		case SVMI:
+		case SIMV:
+			PORTC.OUTSET = EN_OPA_B;
+			break;
+		case DISABLED:
+		case CALIBRATE:
+			PORTC.OUTCLR = EN_OPA_B;
+			break;
+	}
 }

@@ -36,6 +36,7 @@ typedef struct
 #define sampling GPIOR_VAR(GPIOR0, 0)
 #define havePacket GPIOR_VAR(GPIOR0, 1)
 #define dac_write_state GPIOR_VAR(GPIOR0, 2)
+#define dac_done GPIOR_VAR(GPIOR0, 3)
 
 // generic defines
 

@@ -44,6 +44,7 @@ inline void DAC_startWrite(OUT_sample* s){
 	DAC_data[1] = s->bl;
 	
 	dac_write_state = 0;
+	dac_done = 0;
 	CS_LO();
 	USARTC1.DATA =  data0;
 	USARTC1.DATA =  data1;
@@ -58,5 +59,11 @@ ISR(USARTC1_TXC_vect){
 		USARTC1.DATA =  DAC_data[0]; // write byte 2
 		USARTC1.DATA =  DAC_data[1]; // write byte 3
 		dac_write_state = 1;
+	}else{
+		dac_done = 1;
 	}
+}
+
+inline void DAC_wait(void){
+	while(!dac_done);
 }
