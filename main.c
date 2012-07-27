@@ -101,6 +101,8 @@ void configureSampling(uint16_t mode, uint16_t period){
 		TCC0.CNT = 0;
 		sampling = 1;
 	}else{
+		enableOutA(DISABLED);
+		enableOutB(DISABLED);
 		configChannelA(DISABLED);
 		configChannelB(DISABLED);
 		PORTR.OUTCLR = 1 << 1; // LED off
