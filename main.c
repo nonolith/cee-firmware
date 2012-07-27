@@ -98,6 +98,7 @@ void configureSampling(uint16_t mode, uint16_t period){
 		TCC0.CTRLA = TC_CLKSEL_DIV8_gc; // 4Mhz
 		TCC0.INTCTRLA = TC_OVFINTLVL_LO_gc; // interrupt on timer overflow
 		TCC0.PER = period;
+		TCC0.CCB = period-20;
 		TCC0.CNT = 0;
 		sampling = 1;
 	}else{
@@ -219,7 +220,6 @@ void init_hardware(void){
 	ADCA.PRESCALER = ADC_PRESCALER_DIV16_gc; // ADC CLK = 2MHz
 	ADCA.EVCTRL = ADC_SWEEP_0123_gc | ADC_EVACT_SYNCHSWEEP_gc | ADC_EVSEL_7_gc;
 	EVSYS.CH7MUX = EVSYS_CHMUX_TCC0_CCB_gc;
-	TCC0.CCB = 20;
 		 
 	ADCA.CH0.CTRL = ADC_CH_INPUTMODE_DIFFWGAIN_gc | ADC_CH_GAIN_2X_gc; // channel A stream I
 	ADCA.CH1.CTRL = ADC_CH_INPUTMODE_DIFFWGAIN_gc | ADC_CH_GAIN_1X_gc; // channel A stream V
