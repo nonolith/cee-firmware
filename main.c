@@ -91,6 +91,11 @@ void configureSampling(uint16_t mode, uint16_t period){
 	sampleFlags = 0;
 	modeA = DISABLED;
 	modeB = DISABLED;
+
+	enableOutA(DISABLED);
+	enableOutB(DISABLED);
+	configChannelA(DISABLED);
+	configChannelB(DISABLED);
 	
 	if (mode == 1 /*&& period > 80*/){
 		usb_pipe_reset(IN_ADDR, &in_pipe);
@@ -102,10 +107,6 @@ void configureSampling(uint16_t mode, uint16_t period){
 		TCC0.CNT = 0;
 		sampling = 1;
 	}else{
-		enableOutA(DISABLED);
-		enableOutB(DISABLED);
-		configChannelA(DISABLED);
-		configChannelB(DISABLED);
 		PORTR.OUTCLR = 1 << 1; // LED off
 	}
 }
