@@ -257,6 +257,7 @@ void init_hardware(void){
 	// Configure the timer to toggle LDAC
 	TCC0.CTRLB = TC0_CCDEN_bm | TC_WGMODE_SINGLESLOPE_gc;
 	TCC0.CCD = 1;
+	PORTC.PIN3CTRL = PORT_INVEN_bm;
 }
 
 const char PROGMEM hwversion[] = STRINGIFY_EXPANDED(HW_VERSION);
