@@ -27,12 +27,12 @@ int main(void){
 	init_hardware();
 	
 	//DEBUG: event out
-	
+	/*
 	PORTD.DIRSET = (1<<4);
 	PORTCFG.CLKEVOUT = PORTCFG_EVOUT_PD7_gc | PORTCFG_CLKEVPIN_PIN4_gc;
 	PORTCFG.EVOUTSEL = PORTCFG_EVOUTSEL_0_gc;
 	EVSYS.CH0MUX = EVSYS_CHMUX_ADCA_CH3_gc;
-	
+	*/
 	
 	PORTE.DIRSET = (1<<0) | (1<<1);
 	PMIC.CTRL = PMIC_LOLVLEN_bm | PMIC_MEDLVLEN_bm | PMIC_HILVLEN_bm;
@@ -154,7 +154,7 @@ void switchMode(void){
 }
 
 ISR(TCC0_OVF_vect){
-	PORTE.OUTSET = 1;
+	//PORTE.OUTSET = 1;
 	
 	if (!havePacket){
 		if (likely(pipe_can_write(&in_pipe)>0 && pipe_can_read(&out_pipe)>0)){
@@ -199,7 +199,7 @@ ISR(TCC0_OVF_vect){
 		pipe_done_read(&out_pipe);
 		pipe_done_write(&in_pipe);
 	}
-	PORTE.OUTCLR = 1;
+	//PORTE.OUTCLR = 1;
 }
 
 // Configures the board hardware and chip peripherals for the project's functionality.
