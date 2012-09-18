@@ -2,7 +2,7 @@
 
 HW_PRODUCT=Nonolith CEE
 HW_VERSION=1.0
-FW_VERSION=1.2
+FW_VERSION=1.3a
 GIT_ID =  $(shell git rev-parse --short=16 HEAD 2>/dev/null)
 GIT_DIRTY = $(shell git status --porcelain 2>/dev/null | grep -e '^ [MADRC]' > /dev/null && echo '*')
 GIT_VERSION = $(GIT_ID)$(GIT_DIRTY)

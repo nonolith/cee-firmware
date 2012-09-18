@@ -34,7 +34,7 @@ int main(void){
 	EVSYS.CH0MUX = EVSYS_CHMUX_ADCA_CH3_gc;
 	*/
 	
-	PORTE.DIRSET = (1<<0) | (1<<1);
+	/*PORTE.DIRSET = (1<<0) | (1<<1);*/
 	PMIC.CTRL = PMIC_LOLVLEN_bm | PMIC_MEDLVLEN_bm | PMIC_HILVLEN_bm;
 	sei();	
 	
@@ -154,8 +154,6 @@ void switchMode(void){
 }
 
 ISR(TCC0_OVF_vect){
-	//PORTE.OUTSET = 1;
-	
 	if (!havePacket){
 		if (likely(pipe_can_write(&in_pipe)>0 && pipe_can_read(&out_pipe)>0)){
 			PORTR.OUTSET = 1 << 1; // LED on
@@ -199,7 +197,6 @@ ISR(TCC0_OVF_vect){
 		pipe_done_read(&out_pipe);
 		pipe_done_write(&in_pipe);
 	}
-	//PORTE.OUTCLR = 1;
 }
 
 // Configures the board hardware and chip peripherals for the project's functionality.
@@ -342,6 +339,17 @@ bool EVENT_USB_Device_ControlRequest(USB_Request_Header_t* req){
 				DACB.CH0DATA = req->wValue;
 				DACB.CH1DATA = req->wIndex;
 				USB_ep0_send(0);
+				return true;
+
+			case 0x21: //GPIO set and read (type 0xC0)
+				PORTE.OUT = req->wValue & 0xFF;
+				PORTE.DIR = req->wIndex & 0xFF;
+				// fall through
+			case 0x20: //GPIO read (type 0xC0)
+				ep0_buf_in[0] = PORTE.IN;
+				ep0_buf_in[1] = PORTE.DIR;
+				ep0_buf_in[2] = PORTE.OUT;
+				USB_ep0_send(3);
 				return true;
 				
 			case 0x80: // Configure sampling	
