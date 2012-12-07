@@ -107,7 +107,7 @@ void configureSampling(uint16_t mode, uint16_t period){
 		TCC0.CNT = 0;
 		sampling = 1;
 	}else{
-		PORTR.OUTCLR = 1 << 1; // LED off
+		PORTE.OUTCLR = 1 << 1; // LED off
 	}
 }
 
@@ -156,7 +156,7 @@ void switchMode(void){
 ISR(TCC0_OVF_vect){
 	if (!havePacket){
 		if (likely(pipe_can_write(&in_pipe)>0 && pipe_can_read(&out_pipe)>0)){
-			PORTR.OUTSET = 1 << 1; // LED on
+			PORTE.OUTSET = 1 << 1; // LED on
 			havePacket = 1;
 			inPacket = (IN_packet *) pipe_write_ptr(&in_pipe);
 			inSample = inPacket->data;
@@ -169,7 +169,7 @@ ISR(TCC0_OVF_vect){
 			}
 		}else{
 			// TODO: stop timer
-			PORTR.OUTCLR = 1 << 1; // LED off
+			PORTE.OUTCLR = 1 << 1; // LED off
 			sampleFlags |= FLAG_PACKET_DROPPED;
 			return;
 		}
@@ -202,10 +202,10 @@ ISR(TCC0_OVF_vect){
 // Configures the board hardware and chip peripherals for the project's functionality.
 void init_hardware(void){
 	USB_ConfigureClock();
-	PORTR.DIRSET = 1 << 1;
-	PORTR.OUTSET = 1 << 1;
+	PORTE.DIRSET = 1 << 1;
+	PORTE.OUTSET = 1 << 1;
 	_delay_ms(50);
-	PORTR.OUTCLR = 1 << 1;
+	PORTE.OUTCLR = 1 << 1;
 	
 	// Map PORTC to VPORT0 for optimized access to DAC_CS
 	PORTCFG.VPCTRLA = PORTCFG_VP02MAP_PORTC_gc;
