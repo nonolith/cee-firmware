@@ -1,14 +1,14 @@
 # Based on the WinAVR Makefile Template written by Eric B. Weddington, Jörg Wunsch, et al.
 
 HW_PRODUCT=Nonolith CEE
-HW_VERSION=1.0
+HW_VERSION=v2.0b
 FW_VERSION=1.3a
 GIT_ID =  $(shell git rev-parse --short=16 HEAD 2>/dev/null)
 GIT_DIRTY = $(shell git status --porcelain 2>/dev/null | grep -e '^ [MADRC]' > /dev/null && echo '*')
 GIT_VERSION = $(GIT_ID)$(GIT_DIRTY)
 
 # MCU name
-MCU = atxmega32a4
+MCU = atxmega32a4u
 ARCH = XMEGA
 DEVICE = AVR_ATxmega32A4U
 
@@ -222,7 +222,7 @@ AVRDUDE_WRITE_FLASH = -U flash:w:$(TARGET).hex
 # to submit bug reports.
 #AVRDUDE_VERBOSE = -v -v
 
-AVRDUDE_FLAGS = -p $(MCU) -P $(AVRDUDE_PORT) -c $(AVRDUDE_PROGRAMMER)
+AVRDUDE_FLAGS = -p atxmega32a4 -P $(AVRDUDE_PORT) -c $(AVRDUDE_PROGRAMMER)
 AVRDUDE_FLAGS += $(AVRDUDE_NO_VERIFY)
 AVRDUDE_FLAGS += $(AVRDUDE_VERBOSE)
 AVRDUDE_FLAGS += $(AVRDUDE_ERASE_COUNTER)

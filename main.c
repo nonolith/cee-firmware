@@ -26,15 +26,6 @@ unsigned char in_seqno = 0;
 int main(void){
 	init_hardware();
 	
-	//DEBUG: event out
-	/*
-	PORTD.DIRSET = (1<<4);
-	PORTCFG.CLKEVOUT = PORTCFG_EVOUT_PD7_gc | PORTCFG_CLKEVPIN_PIN4_gc;
-	PORTCFG.EVOUTSEL = PORTCFG_EVOUTSEL_0_gc;
-	EVSYS.CH0MUX = EVSYS_CHMUX_ADCA_CH3_gc;
-	*/
-	
-	/*PORTE.DIRSET = (1<<0) | (1<<1);*/
 	PMIC.CTRL = PMIC_LOLVLEN_bm | PMIC_MEDLVLEN_bm | PMIC_HILVLEN_bm;
 	sei();	
 	
@@ -244,27 +235,24 @@ void init_hardware(void){
 	ADCA.CTRLA = ADC_ENABLE_bm;
 
 	// Configure the pin modes for the switches and opamps.
-	PORTD.DIRSET = SHDN_INS_A | SWMODE_A | SHDN_INS_B | EN_OPA_A;
-	PORTC.DIRSET = SWMODE_B | EN_OPA_B;
-	PORTD.DIRCLR = TFLAG_A;
-	PORTC.DIRCLR = TFLAG_B;
+	PORTC.DIRSET = SHDN_INS_A | SWMODE_A | SHDN_INS_B | EN_OPA_A;
+	PORTC.DIRCLR = TFLAG_A;
 	PORTB.DIRSET = ISET_A | ISET_B;
-	PORTD.OUTCLR = EN_OPA_A;
-	PORTC.OUTCLR = EN_OPA_B;
+	PORTC.OUTCLR = EN_OPA_A;
 
 	// Use the XMEGA's internal DAC to configure the hard current limit.
 	DACB.CTRLA |= DAC_CH0EN_bm | DAC_CH1EN_bm | DAC_ENABLE_bm;
 	DACB.CTRLB |= DAC_CHSEL_DUAL_gc; 
 	DACB.CTRLC |= DAC_REFSEL_AREFA_gc; // 2.5VREF
-	DACB.CH1DATA = 0x6B7; // sane default for OPA567-level current limiting 
+	DACB.CH1DATA = 0x7FF; // sane default for OPA567-level current limiting 
 	DACB.CH0DATA = 0x6B7; // 0x6B7/0xFFF*2.5V = 1.05V, 9800*(1.18V-1.05)/560O = 0.227
 
 	USB_Init();
 	
 	// Configure the timer to toggle LDAC
-	TCC0.CTRLB = TC0_CCDEN_bm | TC_WGMODE_SINGLESLOPE_gc;
-	TCC0.CCD = 1;
-	PORTC.PIN3CTRL = PORT_INVEN_bm;
+	TCC0.CTRLB = TC0_CCCEN_bm | TC_WGMODE_SINGLESLOPE_gc;
+	TCC0.CCC = 1;
+	PORTC.PIN2CTRL = PORT_INVEN_bm;
 }
 
 const char PROGMEM hwversion[] = STRINGIFY_EXPANDED(HW_VERSION);
@@ -336,8 +324,8 @@ bool EVENT_USB_Device_ControlRequest(USB_Request_Header_t* req){
 				return true;
 				
 			case 0x15: // ISet
-				DACB.CH0DATA = req->wValue;
-				DACB.CH1DATA = req->wIndex;
+				//DACB.CH0DATA = req->wValue;
+				//DACB.CH1DATA = req->wIndex;
 				USB_ep0_send(0);
 				return true;
 

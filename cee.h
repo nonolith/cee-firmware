@@ -15,7 +15,7 @@
 #include <avr/interrupt.h>
 #include <util/delay.h>
 #include "Descriptors.h"
-#include "usb.h"
+#include "usb/usb.h"
 
 // Flags in GPIO register
 

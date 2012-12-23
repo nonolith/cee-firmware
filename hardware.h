@@ -83,11 +83,11 @@ inline void enableOutA(chan_mode state){
 	switch (state) {
 		case SVMI:
 		case SIMV:
-			PORTD.OUTSET = EN_OPA_A;
+			PORTC.OUTSET = EN_OPA_A;
 			break;
 		case DISABLED:
 		case CALIBRATE:
-			PORTD.OUTCLR = EN_OPA_A;
+			PORTC.OUTCLR = EN_OPA_A;
 			break;
 	}
 }
